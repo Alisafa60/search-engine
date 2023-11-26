@@ -8,6 +8,7 @@ class Document{
     }
 }
 
+
 class DocumentCollection{
     constructor(){
         this.documents = [];
@@ -23,7 +24,7 @@ class DocumentCollection{
         filePaths.forEach(filePath => {
             const documentContent = fs.readFileSync(filePath, 'utf-8'); //read the content
             const tokens = tokenizer.tokenize(documentContent); //tokenize the content
-            const fileName = filePath.split('/').pop();
+            const fileName = filePath.split('/').pop(); //pop the file name
             const document = new Document(fileName, tokens);
             this.addDocument(document);
         })
@@ -34,9 +35,14 @@ class DocumentCollection{
     }
 }
 
+
 class searchEngine{
     constructor(documentCollection){
         this.documentCollection = documentCollection;
+    }
+    
+    calculateLevenshteinDistance(str1, str2){
+        return natural.LevenshteinDistance(str1, str2);
     }
     
     search(querry){
@@ -45,10 +51,22 @@ class searchEngine{
 
         this.documentCollection.documents.forEach(document => {
             const documentTokens = document.content.map(token => token.toLowerCase());
-            const querryTokenFound = querryTokens.some(querryToken => documentTokens.includes(querryToken))
-            if(querryTokenFound)
-                console.log(`Document: ${document.title}, querry token found: ${querry}`);
-        })
+            const distances = querryTokens.map(querryToken => {
+                return Math.min(...documentTokens.map(documentToken => 
+                    this.calculateLevenshteinDistance(querryToken, documentToken)
+                ));
+            });
+
+            //distance between two strings according to insertion, deletion and substitution
+            const averageDistance = distances.reduce((sum, distance) => sum + distance, 0) / distances.length;
+            console.log(`Document: ${document.title}, average distance: ${averageDistance}`);
+            // const querryTokenFound = querryTokens.some(querryToken => documentTokens.includes(querryToken))
+            // if(querryTokenFound)
+            //     console.log(`Document: ${document.title}, querry token found: ${querry}`);
+            // else
+            //     console.log("nothing found")
+        });
+
     }
 }
 
@@ -63,7 +81,7 @@ const document2 = documentCollection.getDocumentByTitle('bikes.txt')
 
 const searchEngin = new searchEngine(documentCollection);
 
-searchEngin.search("burgers");
+searchEngin.search("brgar");
 
 
 
