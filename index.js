@@ -50,21 +50,24 @@ class searchEngine{
         const querryTokens = tokenizer.tokenize(querry.toLowerCase());
 
         this.documentCollection.documents.forEach(document => {
-            const documentTokens = document.content.map(token => token.toLowerCase());
-            const distances = querryTokens.map(querryToken => {
-                return Math.min(...documentTokens.map(documentToken => 
+            const documentTokens = document.content.map(token => token.toLowerCase()); 
+            const wordMatches = [];
+            const distances = [];
+            querryTokens.forEach(querryToken => {
+            const tokenDistances = documentTokens.map(documentToken => 
                     this.calculateLevenshteinDistance(querryToken, documentToken)
-                ));
+                );
+                const minDistance = Math.min(...tokenDistances);
+                distances.push(minDistance)
+                const wordMatch = documentTokens[tokenDistances.indexOf(minDistance)];
+                wordMatches.push(wordMatch);
             });
-
             //distance between two strings according to insertion, deletion and substitution
             const averageDistance = distances.reduce((sum, distance) => sum + distance, 0) / distances.length;
-            console.log(`Document: ${document.title}, average distance: ${averageDistance}`);
-            // const querryTokenFound = querryTokens.some(querryToken => documentTokens.includes(querryToken))
-            // if(querryTokenFound)
-            //     console.log(`Document: ${document.title}, querry token found: ${querry}`);
-            // else
-            //     console.log("nothing found")
+            if (averageDistance<3){
+                console.log(`Document: ${document.title}, querry found: ${querry}`);
+                console.log(`closest matches to this word: ${wordMatches.join(', ')}`)
+            }     
         });
 
     }
@@ -81,7 +84,7 @@ const document2 = documentCollection.getDocumentByTitle('bikes.txt')
 
 const searchEngin = new searchEngine(documentCollection);
 
-searchEngin.search("brgar");
+searchEngin.search("bergars");
 
 
 
