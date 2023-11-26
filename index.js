@@ -1,5 +1,6 @@
-const fs = require('fs');
 const natural = require('natural');
+const fs = require('fs');
+const axios = require('axios');
 
 class Document{
     constructor(title, content){
@@ -36,10 +37,19 @@ class DocumentCollection{
 }
 
 
-class searchEngine{
+class SearchEngine{
     constructor(documentCollection){
         this.documentCollection = documentCollection;
         this.stemmer = natural.PorterStemmer
+    }
+
+    async querrySynonyms(querryTokens) {
+        const synonyms = await Promise.all(querryTokens.map(token =>
+            axios.get(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(token)}`)
+                .then(response => response.data.map(item => item.word))
+        ));
+
+        return querryTokens.flatMap((token, index) => [token, ...synonyms[index]]);
     }
     
     calculateLevenshteinDistance(str1, str2){
@@ -53,13 +63,15 @@ class searchEngine{
     search(querry){
         const tokenizer = new natural.WordTokenizer();
         const querryTokens = tokenizer.tokenize(querry.toLowerCase());
+        
 
         this.documentCollection.documents.forEach(document => {
-
-            const documentTokens = this.stemTokens(document.content); 
-            const stemmedQuerryTokens = this.stemTokens(querryTokens)
-            const wordMatches = [];
             const distances = [];
+            const wordMatches = [];
+            const documentTokens = this.stemTokens(document.content); 
+            const stemmedQuerryTokens = this.stemTokens(querryTokens);
+            
+           
             stemmedQuerryTokens.forEach(querryToken => {
             const tokenDistances = documentTokens.map(documentToken => 
                     this.calculateLevenshteinDistance(querryToken, documentToken)
@@ -90,9 +102,9 @@ documentCollection.addDocumentStoredLocally(filePaths);
 const document1 = documentCollection.getDocumentByTitle('fastFood.txt');
 const document2 = documentCollection.getDocumentByTitle('bikes.txt')
 
-const searchEngin = new searchEngine(documentCollection);
+const searchEngin = new SearchEngine(documentCollection);
 
-searchEngin.search("burger");
+searchEngin.search("burgers");
 
 
 
