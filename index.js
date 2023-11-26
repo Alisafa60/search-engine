@@ -39,21 +39,28 @@ class DocumentCollection{
 class searchEngine{
     constructor(documentCollection){
         this.documentCollection = documentCollection;
+        this.stemmer = natural.PorterStemmer
     }
     
     calculateLevenshteinDistance(str1, str2){
         return natural.LevenshteinDistance(str1, str2);
     }
     
+    stemTokens(tokens){
+        return tokens.map(token => this.stemmer.stem(token.toLowerCase()));
+    }
+
     search(querry){
         const tokenizer = new natural.WordTokenizer();
         const querryTokens = tokenizer.tokenize(querry.toLowerCase());
 
         this.documentCollection.documents.forEach(document => {
-            const documentTokens = document.content.map(token => token.toLowerCase()); 
+
+            const documentTokens = this.stemTokens(document.content); 
+            const stemmedQuerryTokens = this.stemTokens(querryTokens)
             const wordMatches = [];
             const distances = [];
-            querryTokens.forEach(querryToken => {
+            stemmedQuerryTokens.forEach(querryToken => {
             const tokenDistances = documentTokens.map(documentToken => 
                     this.calculateLevenshteinDistance(querryToken, documentToken)
                 );
@@ -65,6 +72,7 @@ class searchEngine{
             //distance between two strings according to insertion, deletion and substitution
             const averageDistance = distances.reduce((sum, distance) => sum + distance, 0) / distances.length;
             if (averageDistance<3){
+                console.log(averageDistance)
                 console.log(`Document: ${document.title}, querry found: ${querry}`);
                 console.log(`closest matches to this word: ${wordMatches.join(', ')}`)
             }     
@@ -84,7 +92,7 @@ const document2 = documentCollection.getDocumentByTitle('bikes.txt')
 
 const searchEngin = new searchEngine(documentCollection);
 
-searchEngin.search("bergars");
+searchEngin.search("burger");
 
 
 
